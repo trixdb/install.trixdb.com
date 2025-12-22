@@ -120,7 +120,7 @@ parse_args() {
 }
 
 # Download and install
-install() {
+do_install() {
     TMPDIR=$(mktemp -d)
     trap 'rm -rf "$TMPDIR"' EXIT
 
@@ -183,7 +183,7 @@ main() {
         get_latest_version
     fi
 
-    install
+    do_install
     verify
 }
 
