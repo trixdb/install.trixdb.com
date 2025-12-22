@@ -1,0 +1,190 @@
+#!/bin/sh
+set -e
+
+# TrixDB CLI Installer
+# Usage:
+#   curl -fsSL https://install.trixdb.com | sh              # Install latest
+#   curl -fsSL https://install.trixdb.com | sh -s -- v1.2.3 # Install specific version
+#   curl -fsSL https://install.trixdb.com | sh -s -- --list # List available versions
+
+REPO="trixdb/trix"
+BINARY="trix"
+INSTALL_DIR="/usr/local/bin"
+REQUESTED_VERSION=""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+info() {
+    printf "${GREEN}==>${NC} %s\n" "$1"
+}
+
+warn() {
+    printf "${YELLOW}Warning:${NC} %s\n" "$1"
+}
+
+error() {
+    printf "${RED}Error:${NC} %s\n" "$1" >&2
+    exit 1
+}
+
+# Detect OS
+detect_os() {
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    case "$OS" in
+        linux) OS="linux" ;;
+        darwin) OS="darwin" ;;
+        mingw*|msys*|cygwin*) error "Use Scoop on Windows: scoop install trixdb/scoop-trix/trix" ;;
+        *) error "Unsupported operating system: $OS" ;;
+    esac
+}
+
+# Detect architecture
+detect_arch() {
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64|amd64) ARCH="x86_64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+        *) error "Unsupported architecture: $ARCH" ;;
+    esac
+}
+
+# List available versions
+list_versions() {
+    info "Available versions:"
+    curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=20" | \
+        grep '"tag_name"' | cut -d'"' -f4 | head -20
+    echo ""
+    echo "Install a specific version with:"
+    echo "  curl -fsSL https://install.trixdb.com | sh -s -- VERSION"
+    exit 0
+}
+
+# Get latest version from GitHub
+get_latest_version() {
+    VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)
+    if [ -z "$VERSION" ]; then
+        error "Failed to fetch latest version"
+    fi
+}
+
+# Verify requested version exists
+verify_version() {
+    local ver="$1"
+    # Ensure version starts with 'v'
+    case "$ver" in
+        v*) ;;
+        *) ver="v$ver" ;;
+    esac
+
+    # Check if release exists
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://api.github.com/repos/$REPO/releases/tags/$ver")
+    if [ "$HTTP_CODE" != "200" ]; then
+        error "Version $ver not found. Use --list to see available versions."
+    fi
+    VERSION="$ver"
+}
+
+# Parse command line arguments
+parse_args() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --list|-l)
+                list_versions
+                ;;
+            --help|-h)
+                echo "TrixDB CLI Installer"
+                echo ""
+                echo "Usage:"
+                echo "  curl -fsSL https://install.trixdb.com | sh              # Install latest"
+                echo "  curl -fsSL https://install.trixdb.com | sh -s -- v1.2.3 # Install specific version"
+                echo "  curl -fsSL https://install.trixdb.com | sh -s -- --list # List available versions"
+                echo ""
+                echo "Options:"
+                echo "  --list, -l    List available versions"
+                echo "  --help, -h    Show this help message"
+                exit 0
+                ;;
+            v*|[0-9]*)
+                REQUESTED_VERSION="$1"
+                ;;
+            *)
+                warn "Unknown option: $1"
+                ;;
+        esac
+        shift
+    done
+}
+
+# Download and install
+install() {
+    TMPDIR=$(mktemp -d)
+    trap 'rm -rf "$TMPDIR"' EXIT
+
+    # Construct download URL (matches GoReleaser archive naming)
+    VERSION_NUM="${VERSION#v}"
+    ARCHIVE="trix_${VERSION_NUM}_${OS}_${ARCH}.tar.gz"
+    URL="https://github.com/$REPO/releases/download/$VERSION/$ARCHIVE"
+
+    info "Downloading $BINARY $VERSION for $OS/$ARCH..."
+
+    if ! curl -fsSL "$URL" -o "$TMPDIR/$ARCHIVE"; then
+        error "Failed to download $URL"
+    fi
+
+    info "Extracting..."
+    tar -xzf "$TMPDIR/$ARCHIVE" -C "$TMPDIR"
+
+    info "Installing to $INSTALL_DIR..."
+    if [ -w "$INSTALL_DIR" ]; then
+        install -m 755 "$TMPDIR/$BINARY" "$INSTALL_DIR/$BINARY"
+    else
+        warn "Need sudo to install to $INSTALL_DIR"
+        sudo install -m 755 "$TMPDIR/$BINARY" "$INSTALL_DIR/$BINARY"
+    fi
+
+    info "Successfully installed $BINARY $VERSION"
+    echo ""
+    echo "Run 'trix --help' to get started"
+}
+
+# Verify installation
+verify() {
+    if command -v "$BINARY" >/dev/null 2>&1; then
+        INSTALLED_VERSION=$("$BINARY" --version 2>/dev/null | head -1 || echo "unknown")
+        info "Verified: $INSTALLED_VERSION"
+    else
+        warn "$BINARY not found in PATH. You may need to add $INSTALL_DIR to your PATH."
+    fi
+}
+
+main() {
+    echo ""
+    echo "  ████████╗██████╗ ██╗██╗  ██╗"
+    echo "  ╚══██╔══╝██╔══██╗██║╚██╗██╔╝"
+    echo "     ██║   ██████╔╝██║ ╚███╔╝ "
+    echo "     ██║   ██╔══██╗██║ ██╔██╗ "
+    echo "     ██║   ██║  ██║██║██╔╝ ██╗"
+    echo "     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+    echo ""
+
+    parse_args "$@"
+    detect_os
+    detect_arch
+
+    if [ -n "$REQUESTED_VERSION" ]; then
+        info "Installing requested version: $REQUESTED_VERSION"
+        verify_version "$REQUESTED_VERSION"
+    else
+        info "Installing latest version..."
+        get_latest_version
+    fi
+
+    install
+    verify
+}
+
+main "$@"
