@@ -16,6 +16,8 @@ REQUESTED_VERSION=""
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+TRIX='\033[38;2;90;154;138m' # Trix brand color #5a9a8a
+ACCENT='\033[1;38;2;110;153;164m' # Accent color #6e99a4 (bold)
 NC='\033[0m' # No Color
 
 info() {
@@ -163,12 +165,13 @@ verify() {
 
 main() {
     echo ""
-    echo "  ████████╗██████╗ ██╗██╗  ██╗"
-    echo "  ╚══██╔══╝██╔══██╗██║╚██╗██╔╝"
-    echo "     ██║   ██████╔╝██║ ╚███╔╝ "
-    echo "     ██║   ██╔══██╗██║ ██╔██╗ "
-    echo "     ██║   ██║  ██║██║██╔╝ ██╗"
-    echo "     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+    printf "${TRIX}  ████████╗██████╗ ██╗██╗  ██╗${NC}\n"
+    printf "${TRIX}  ╚══██╔══╝██╔══██╗██║╚██╗██╔╝${NC}\n"
+    printf "${TRIX}     ██║   ██████╔╝██║ ╚███╔╝ ${NC}\n"
+    printf "${TRIX}     ██║   ██╔══██╗██║ ██╔██╗ ${NC}\n"
+    printf "${TRIX}     ██║   ██║  ██║██║██╔╝ ██╗${NC}\n"
+    printf "${TRIX}     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝${NC}\n"
+    printf "        Total recall for ${ACCENT}AI${NC}.\n"
     echo ""
 
     parse_args "$@"
