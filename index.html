@@ -1,13 +1,13 @@
 #!/bin/sh
 set -e
 
-# TrixDB CLI Installer
+# Trix CLI Installer
 # Usage:
 #   curl -fsSL https://install.trixdb.com | sh              # Install latest
 #   curl -fsSL https://install.trixdb.com | sh -s -- v1.2.3 # Install specific version
 #   curl -fsSL https://install.trixdb.com | sh -s -- --list # List available versions
 
-REPO="trixdb/trix"
+REPO="trix/trix"
 BINARY="trix"
 INSTALL_DIR="/usr/local/bin"
 REQUESTED_VERSION=""
@@ -39,7 +39,7 @@ detect_os() {
     case "$OS" in
         linux) OS="linux" ;;
         darwin) OS="darwin" ;;
-        mingw*|msys*|cygwin*) error "Use Scoop on Windows: scoop install trixdb/scoop-trix/trix" ;;
+        mingw*|msys*|cygwin*) error "Use Scoop on Windows: scoop install trix/scoop-trix/trix" ;;
         *) error "Unsupported operating system: $OS" ;;
     esac
 }
@@ -98,7 +98,7 @@ parse_args() {
                 list_versions
                 ;;
             --help|-h)
-                echo "TrixDB CLI Installer"
+                echo "Trix CLI Installer"
                 echo ""
                 echo "Usage:"
                 echo "  curl -fsSL https://install.trixdb.com | sh              # Install latest"
